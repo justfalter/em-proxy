@@ -3,9 +3,17 @@ module EventMachine
     class Backend < EventMachine::Connection
       attr_accessor :plexer, :name, :debug
 
-      def initialize(debug = false)
-        @debug = debug
+      def initialize(opts = {})
+        @debug = opts[:debug] == true
+        @ssl = opts[:ssl] || false
+        @start_tls_opts = opts[:start_tls]
         @connected = EM::DefaultDeferrable.new
+      end
+
+      def post_init
+        unless @start_tls_opts.nil?
+          start_tls @start_tls_opts
+        end
       end
 
       def connection_completed

@@ -12,7 +12,15 @@ module EventMachine
       ##### EventMachine
       def initialize(options)
         @debug = options[:debug] || false
+
+        @start_tls_opts = options[:start_tls]
         @servers = {}
+      end
+
+      def post_init
+        unless @start_tls_opts.nil?
+          start_tls @start_tls_opts
+        end
       end
 
       def receive_data(data)
@@ -43,14 +51,18 @@ module EventMachine
       # initialize connections to backend servers
       #
       def server(name, opts)
+        opts = {
+          :debug => @debug
+        }.merge(opts)
+        
         if opts[:socket]
-          srv = EventMachine::connect_unix_domain(opts[:socket], EventMachine::ProxyServer::Backend, @debug) do |c|
+          srv = EventMachine::connect_unix_domain(opts[:socket], EventMachine::ProxyServer::Backend, opts) do |c|
             c.name = name
             c.plexer = self
             c.proxy_incoming_to(self, 10240) if opts[:relay_server]
           end
         else
-          srv = EventMachine::bind_connect(opts[:bind_host], opts[:bind_port], opts[:host], opts[:port], EventMachine::ProxyServer::Backend, @debug) do |c|
+          srv = EventMachine::bind_connect(opts[:bind_host], opts[:bind_port], opts[:host], opts[:port], EventMachine::ProxyServer::Backend, opts) do |c|
             c.name = name
             c.plexer = self
             c.proxy_incoming_to(self, 10240) if opts[:relay_server]
